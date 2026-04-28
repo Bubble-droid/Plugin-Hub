@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": true,
+
+    "allowJs": true,
+    "checkJs": true,
+
+    "paths": {
+      "@/*": ["./src/*"],
+      "@gui-for-singbox/*": ["./external/gui-for-cores/gui-for-singbox/frontend/src/*"],
+      "@gui-for-clash/*": ["./external/gui-for-cores/gui-for-clash/frontend/src/*"],
+      "@typebox/*": ["./external/typebox-source/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "external/**/*.ts", "plugins.d.ts"],
+  "exclude": ["node_modules", "dist"]
+}

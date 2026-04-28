@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "composite": false,
+
+    "rootDir": "./src/plugins",
+    "outDir": "./dist",
+
+    "sourceMap": false,
+    "declaration": false,
+    "declarationMap": false,
+
+    "skipLibCheck": true,
+    "noCheck": true
+  },
+  "include": ["src/plugins/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

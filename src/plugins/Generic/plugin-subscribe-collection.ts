@@ -1,0 +1,517 @@
+import type { SingBoxConfig } from '@/types/sing-box.js'
+import type { UnpackArray } from '@/types/utils.js'
+import type { Subscription } from '@gui-for-singbox/types/app.js'
+
+type SingBoxProxy = Exclude<UnpackArray<NonNullable<SingBoxConfig['outbounds']>>, { type: 'direct' | 'block' | 'selector' | 'urltest' | 'tor' }>
+
+interface MihomoProxy {
+  name: string
+  type: string
+  server: string
+  port: number
+}
+
+interface CollectionItem {
+  id: string
+  subscriptionId: string
+  members: string[]
+  operates: { showOrdinal: boolean; deduplicate: boolean }
+}
+
+interface CreateCollectionParams extends Pick<CollectionItem, 'operates'> {
+  name: string
+  selectedSubs: string[]
+  external: Recordable<string>
+}
+
+const CORE = Plugins.APP_TITLE.includes('SingBox') ? 'sing-box' : 'mihomo'
+
+/** @type {EsmPlugin} */
+export default (Plugin: PluginMetadata): PluginExposed => {
+  const BASE_PATH = `data/third/${Plugin.id}`
+  const CACHE_PATH = `data/.cache/${Plugin.id}`
+  const MANAGER_CONFIG_PATH = `${BASE_PATH}/${Plugin.id}.json`
+
+  const appStore = Plugins.useAppStore()
+  const subscribesStore = Plugins.useSubscribesStore()
+
+  const collections = Vue.ref<CollectionItem[]>([])
+
+  /* 触发器 手动触发 */
+  const onRun = async () => {
+    await init()
+    openMainUI()
+  }
+
+  /* 触发器: 更新订阅时 */
+  const onSubscribe = async (proxies: Recordable[], subscription: Subscription): Promise<Recordable[]> => {
+    const col = collections.value.find((c) => c.subscriptionId === subscription.id)
+    if (!col) return proxies
+    return (await updateCollection(col)) ?? proxies
+  }
+
+  /* 触发器 APP就绪后 */
+  const onReady = async () => {
+    await init()
+    addSubscriptionsHeaderAction()
+  }
+
+  const onInstall = async () => {
+    if (!(await Plugins.FileExists(CACHE_PATH))) {
+      await Plugins.MakeDir(CACHE_PATH)
+    }
+    if (!(await Plugins.FileExists(BASE_PATH))) {
+      await Plugins.MakeDir(BASE_PATH)
+      await Plugins.WriteFile(MANAGER_CONFIG_PATH, '[]')
+    }
+  }
+
+  const onUninstall = async () => {
+    await Promise.all([BASE_PATH, CACHE_PATH].map((dir) => Plugins.RemoveFile(dir)))
+  }
+
+  const addSubscriptionsHeaderAction = () => {
+    appStore.addCustomActions('subscriptions_header', {
+      id: Plugin.id,
+      component: 'Button',
+      componentProps: {
+        type: 'link',
+        onClick: onRun
+      },
+      componentSlots: {
+        default: '管理聚合订阅'
+      }
+    })
+  }
+
+  const openMainUI = () => {
+    const { h, resolveComponent, defineComponent } = Vue
+
+    const component = defineComponent({
+      template: `
+    <div class="h-full w-full">
+      <div v-if="collections.value.length === 0"
+        class="flex items-center justify-center h-full min-h-[200px] cursor-pointer" @click="openCreateUI">
+        <span class="text-16 font-bold text-gray-400 hover:text-gray-600 transition-colors">
+          尚未添加任何组合，点击添加
+        </span>
+      </div>
+      <div v-else class="grid grid-cols-3 gap-8 p-8 overflow-y-auto max-h-[500px]">
+        <Card v-for="col in collections.value" :key="col.id" :title="getSubscribeName(col.subscriptionId)">
+          <template #extra>
+            <Dropdown>
+              <Button type="link" size="small" icon="more" />
+              <template #overlay>
+                <div class="flex flex-col gap-4 min-w-64 p-4">
+                  <Button type="text" @click.stop="edit(col)">编辑</Button>
+                  <Button type="text" @click.stop="del(col)">删除</Button>
+                </div>
+              </template>
+            </Dropdown>
+          </template>
+          <div class="flex flex-col min-h-[70px]">
+            <div class="mt-2 flex gap-2 flex-wrap">
+              <Tag v-if="col.operates.showOrdinal" color="blue" size="small">序号</Tag>
+              <Tag v-if="col.operates.deduplicate" color="green" size="small">去重</Tag>
+            </div>
+          </div>
+        </Card>
+        <Button class="col-span-3 mt-4" type="dashed" @click="openCreateUI">
+          添加新组合
+        </Button>
+      </div>
+    </div>
+    `,
+
+      setup(_, { expose }) {
+        expose<{ modalSlots: UseModalSlots }>({
+          modalSlots: {
+            toolbar: () => [
+              h(
+                resolveComponent('Button'),
+                {
+                  type: 'link',
+                  onClick: async () => {
+                    await Plugins.OpenDir(BASE_PATH)
+                  }
+                },
+                () => '打开插件目录'
+              ),
+              h(
+                resolveComponent('Button'),
+                {
+                  type: 'link',
+                  onClick: async () => {
+                    await Plugins.OpenDir(CACHE_PATH)
+                  }
+                },
+                () => '打开缓存目录'
+              )
+            ]
+          }
+        })
+
+        return {
+          getSubscribeName,
+          collections,
+          openCreateUI,
+          edit: (item: CollectionItem) => {
+            openEditUI(item)
+          },
+          del: async (item: CollectionItem) => {
+            await deleteCollection(item)
+          }
+        }
+      }
+    })
+
+    const modal = Plugins.modal({
+      title: '聚合订阅管理',
+      submit: false,
+      cancelText: '关闭',
+      width: '80',
+      height: '80',
+      afterClose: () => {
+        modal.destroy()
+      }
+    })
+
+    modal.setContent(component)
+    modal.open()
+  }
+
+  const openCreateUI = () => {
+    const { reactive, computed, defineComponent } = Vue
+    const state = reactive<CreateCollectionParams>({
+      name: '',
+      selectedSubs: [],
+      external: {},
+      operates: { showOrdinal: false, deduplicate: false }
+    })
+
+    const existingSubs = computed<Pick<Subscription, 'id' | 'name'>[]>(() =>
+      (subscribesStore.subscribes as Subscription[])
+        .filter((s) => !collections.value.some((c) => c.subscriptionId === s.id))
+        .map((s) => ({ id: s.id, name: s.name }))
+    )
+
+    const component = defineComponent({
+      template: `
+    <div class="flex flex-col gap-8 p-8">
+      <div class="flex flex-col gap-6 p-6 border rounded">
+        <div class="font-bold text-16">1、名称</div>
+        <Input v-model="state.name" placeholder="请输入组合名称" class="w-full mt-2" />
+      </div>
+
+      <div class="flex flex-col gap-6 p-6 border rounded">
+        <div class="font-bold text-16">2、选择已有订阅</div>
+        <div class="flex flex-col gap-4 mt-2">
+          <div v-if="!existingSubs.length" class="p-8 text-center text-gray-400 border border-dashed rounded">未找到可用订阅</div>
+          <div v-else class="grid grid-cols-3 gap-8 p-1 overflow-y-auto max-h-64">
+            <Card
+              v-for="sub in existingSubs"
+              :key="sub.id"
+              :title="sub.name"
+              :selected="state.selectedSubs.includes(sub.id)"
+              @click="toggle(sub.id)"
+              class="transition-all cursor-pointer hover:shadow-md"
+            />
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-4 pt-4 border-t border-dashed">
+          <div class="font-bold text-14">·添加新订阅</div>
+          <KeyValueEditor v-model="state.external" :placeholder="['名称', '链接']" class="mt-2" />
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-6 p-6 border rounded">
+        <div class="font-bold text-16">4、额外操作</div>
+        <div class="flex items-center justify-between py-2 mt-2">
+          <span class="font-bold text-14">名称添加序号</span>
+          <span class="flex-1"></span>
+          <Switch v-model="state.operates.showOrdinal" />
+        </div>
+        <div class="flex items-center justify-between py-2">
+          <span class="font-bold text-14">节点去重（地址+端口）</span>
+          <span class="flex-1"></span>
+          <Switch v-model="state.operates.deduplicate" />
+        </div>
+      </div>
+    </div>
+    `,
+      setup() {
+        return {
+          state,
+          existingSubs,
+          toggle: (id: string) => {
+            const idx = state.selectedSubs.indexOf(id)
+            if (idx === -1) state.selectedSubs.push(id)
+            else state.selectedSubs.splice(idx, 1)
+          }
+        }
+      }
+    })
+
+    const modal = Plugins.modal({
+      title: '新建',
+      width: '60',
+      submitText: '确认',
+      cancelText: '取消',
+      onOk: async () => {
+        if (!state.name.trim()) {
+          Plugins.message.error('请输入组合名称')
+          return false
+        }
+        if (!state.selectedSubs.length && !Object.keys(state.external).length) {
+          Plugins.message.error('请至少选择/添加一个订阅')
+          return false
+        }
+
+        try {
+          await addCollection(state)
+          Plugins.message.success('创建成功')
+          return true
+        } catch (error) {
+          Plugins.message.error(`创建失败：${error instanceof Error ? error.message : String(error)}`)
+          return false
+        }
+      },
+      afterClose: () => {
+        modal.destroy()
+      }
+    })
+
+    modal.setContent(component)
+    modal.open()
+  }
+
+  const openEditUI = (col: CollectionItem) => {
+    const { reactive, computed, defineComponent } = Vue
+    const subscribesStore = Plugins.useSubscribesStore()
+
+    const state = reactive({
+      members: [...col.members],
+      operates: { ...col.operates }
+    })
+
+    const existingSubs = computed<Pick<Subscription, 'id' | 'name'>[]>(() =>
+      (subscribesStore.subscribes as Subscription[])
+        .filter((s) => !collections.value.some((c) => c.subscriptionId === s.id))
+        .map((s) => ({ id: s.id, name: s.name }))
+    )
+
+    const component = defineComponent({
+      template: `
+    <div class="flex flex-col gap-8 p-8">
+      <div class="flex flex-col gap-6 p-6 border rounded">
+        <div class="font-bold text-16">成员订阅</div>
+        <div class="grid grid-cols-3 gap-8 p-1 overflow-y-auto max-h-64 mt-2">
+          <Card
+            v-for="sub in existingSubs"
+            :key="sub.id"
+            :title="sub.name"
+            :selected="state.members.includes(sub.id)"
+            @click="toggle(sub.id)"
+            class="transition-all cursor-pointer hover:shadow-md"
+          />
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-6 p-6 border rounded">
+        <div class="font-bold text-16">额外操作</div>
+        <div class="flex items-center justify-between py-2 mt-2">
+          <span class="font-bold text-14">序号</span>
+          <span class="flex-1"></span>
+          <Switch v-model="state.operates.showOrdinal" />
+        </div>
+        <div class="flex items-center justify-between py-2">
+          <span class="font-bold text-14">去重</span>
+          <span class="flex-1"></span>
+          <Switch v-model="state.operates.deduplicate" />
+        </div>
+      </div>
+    </div>
+    `,
+      setup() {
+        return {
+          state,
+          existingSubs,
+          toggle: (id: string) => {
+            const idx = state.members.indexOf(id)
+            if (idx === -1) state.members.push(id)
+            else state.members.splice(idx, 1)
+          }
+        }
+      }
+    })
+
+    const modal = Plugins.modal({
+      title: '编辑',
+      width: '60',
+      submitText: '保存',
+      cancelText: '取消',
+      onOk: async () => {
+        if (!state.members.length) {
+          Plugins.message.error('请至少选择一个订阅')
+          return false
+        }
+        col.members = [...state.members]
+        col.operates = { ...state.operates }
+        try {
+          await saveCollections()
+          Plugins.message.success('保存成功')
+          return true
+        } catch (error) {
+          Plugins.message.error(`保存失败：${error instanceof Error ? error.message : String(error)}`)
+          return false
+        }
+      },
+      afterClose: () => {
+        modal.destroy()
+      }
+    })
+
+    modal.setContent(component)
+    modal.open()
+  }
+
+  const init = async () => {
+    try {
+      const content = await Plugins.ReadFile(MANAGER_CONFIG_PATH)
+      collections.value = JSON.parse(content) as CollectionItem[]
+    } catch (error) {
+      console.error('管理器配置读取失败', error)
+      collections.value = []
+    }
+  }
+
+  const addCollection = async (payload: CreateCollectionParams) => {
+    const col: CollectionItem = {
+      id: Plugins.sampleID(),
+      members: [...payload.selectedSubs],
+      operates: { ...payload.operates },
+      subscriptionId: ''
+    }
+
+    for (const [name, url] of Object.entries(payload.external)) {
+      if (!name.trim() || !url.trim()) continue
+      const newSub = subscribesStore.getSubscribeTemplate(name.trim(), { url: url.trim() }) as Subscription
+      newSub.header.request = {
+        'User-Agent': 'Clash.Meta'
+      }
+      await subscribesStore.addSubscribe(newSub)
+      col.members.push(newSub.id)
+    }
+
+    const colSub = subscribesStore.getSubscribeTemplate(payload.name, { url: getProxiesCachePath(col) }) as Subscription
+    colSub.type = 'File'
+    await subscribesStore.addSubscribe(colSub)
+    col.subscriptionId = colSub.id
+
+    await writeCache(col, [])
+
+    collections.value?.push(col)
+    await saveCollections()
+
+    await subscribesStore.updateSubscribe(colSub.id)
+  }
+
+  /**
+   * 删除集合（可选删除承载订阅）
+   */
+  const deleteCollection = async (col: CollectionItem) => {
+    const sure = await Plugins.confirm('删除', `确定要删除「${getSubscribeName(col.subscriptionId)}」吗？`).catch(() => false)
+    if (!sure) return
+    const idx = collections.value.findIndex((c) => c.id === col.id)
+    if (idx >= 0) collections.value.splice(idx, 1)
+    await Plugins.RemoveFile((subscribesStore.getSubscribeById(col.subscriptionId) as Subscription).path)
+    await subscribesStore.deleteSubscribe(col.subscriptionId)
+    await Plugins.RemoveFile(getProxiesCachePath(col))
+    await saveCollections()
+    Plugins.message.success('已删除')
+  }
+
+  const saveCollections = async () => {
+    await Plugins.WriteFile(MANAGER_CONFIG_PATH, JSON.stringify(collections.value, null, 2))
+  }
+
+  const updateCollection = async (col: CollectionItem): Promise<Recordable[] | undefined> => {
+    const memberIds = new Set(col.members)
+    const members = (subscribesStore.subscribes as Subscription[]).filter((s) => memberIds.has(s.id))
+    if (members.length === 0) {
+      Plugins.message.warn(`组合「${getSubscribeName(col.subscriptionId)}」没有可用成员，已跳过`)
+      return
+    }
+
+    const allProxies: Recordable[] = []
+    for (const sub of members) {
+      try {
+        await subscribesStore.updateSubscribe(sub.id)
+        const content = await Plugins.ReadFile(sub.path, { Mode: 'Text' })
+        const proxies = CORE === 'sing-box' ? (JSON.parse(content) as Recordable[]) : (Plugins.YAML.parse(content) as { proxies: Recordable[] }).proxies
+        allProxies.push(...proxies)
+      } catch (err) {
+        Plugins.message.warn(`成员订阅 ${sub.name} 更新失败，已忽略，${err instanceof Error ? err.message : String(err)}`)
+      }
+    }
+
+    if (allProxies.length === 0) return
+
+    let collectionProxies = allProxies
+
+    // 去重：server + port
+    if (col.operates.deduplicate) {
+      const unique = new Set<string>()
+      collectionProxies = collectionProxies.filter((p) => {
+        const server = (p as SingBoxProxy).server
+        const port = CORE === 'sing-box' ? (p as SingBoxProxy).server_port : (p as unknown as MihomoProxy).port
+        const key = `${server}:${port}`
+        if (!unique.has(key)) {
+          unique.add(key)
+          return true
+        }
+        return false
+      })
+    }
+
+    // 名称添加序号
+    if (col.operates.showOrdinal) {
+      const width = String(collectionProxies.length).length
+      collectionProxies = collectionProxies.map((p, i) => {
+        const seq = String(i + 1).padStart(width, '0')
+        if (CORE === 'sing-box') {
+          const tag = (p as SingBoxProxy).tag
+          return { ...p, tag: `${tag} - ${seq}` }
+        }
+        const name = (p as unknown as MihomoProxy).name
+        return { ...p, name: `${name} - ${seq}` }
+      })
+    }
+
+    await writeCache(col, collectionProxies)
+    return collectionProxies
+  }
+
+  const writeCache = async (col: CollectionItem, proxies: Recordable[]) => {
+    const cachePath = getProxiesCachePath(col)
+    const contentToWrite = CORE === 'sing-box' ? JSON.stringify({ outbounds: proxies }, null, 2) : Plugins.YAML.stringify({ proxies })
+    await Plugins.WriteFile(cachePath, contentToWrite)
+  }
+
+  const getProxiesCachePath = (col: CollectionItem) => {
+    return `${CACHE_PATH}/${col.id}${CORE === 'sing-box' ? '.json' : '.yaml'}`
+  }
+
+  const getSubscribeName = (id: string) => {
+    return (subscribesStore.getSubscribeById(id) as Subscription)?.name ?? 'Not Found'
+  }
+
+  return {
+    onRun,
+    onSubscribe,
+    onReady,
+    onInstall,
+    onUninstall
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "composite": true,
+    "noEmit": true,
+
+    "allowJs": true,
+    "checkJs": true
+  },
+  "include": ["eslint.config.js", "scripts/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

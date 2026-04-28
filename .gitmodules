@@ -1,0 +1,12 @@
+[submodule "external/gui-for-cores/gui-for-singbox"]
+	path = external/gui-for-cores/gui-for-singbox
+	url = https://github.com/GUI-for-Cores/GUI.for.SingBox.git
+[submodule "external/gui-for-cores/docs"]
+	path = external/gui-for-cores/docs
+	url = https://github.com/GUI-for-Cores/GUI-for-Cores.github.io.git
+[submodule "external/gui-for-cores/gui-for-clash"]
+	path = external/gui-for-cores/gui-for-clash
+	url = https://github.com/GUI-for-Cores/GUI.for.Clash.git
+[submodule "external/typebox-source"]
+	path = external/typebox-source
+	url = https://github.com/jiang-zhexin/typebox.git

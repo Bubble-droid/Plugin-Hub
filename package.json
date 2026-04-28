@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "format": "prettier --write plugins/"
+    "format": "prettier --write plugins/",
+    "build": "tsc -p tsconfig.build.json",
+    "publish": "tsc -p tsconfig.build.json --outDir plugins/ && pnpm run format",
+    "postinstall": "pnpm run sub:init",
+    "sub:init": "git submodule update --init --recursive",
+    "sub:update": "git submodule update --remote --recursive"
   },
   "type": "module",
   "keywords": [
@@ -14,8 +19,17 @@
   ],
   "author": "GUI.for.Cores",
   "license": "GPL-3.0",
-  "dependencies": {
-    "prettier": "^3.5.3",
-    "vue": "^3.5.16"
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@grammyjs/types": "^3.26.0",
+    "@types/node": "^25.6.0",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.3",
+    "skills": "^1.5.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.59.1",
+    "vue": "^3.5.33"
   }
 }
