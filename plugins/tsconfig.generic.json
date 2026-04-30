@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.base.json",
+  "include": [
+    "Generic/**/*",
+    "plugins.generic.d.ts",
+    "../upstream/gui-for-singbox/frontend/src/**/*.ts",
+    "../upstream/gui-for-clash/frontend/src/**/*.ts",
+    "../plugins.d.ts"
+  ],
+  "exclude": ["node_modules"]
+}

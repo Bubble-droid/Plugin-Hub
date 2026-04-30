@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "allowJs": true,
+    "noEmit": true,
+    "lib": ["ESNext", "DOM"],
+    "module": "NodeNext",
+    "target": "ESNext",
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "useUnknownInCatchVariables": false,
+
+    "paths": {
+      "@upstream/gui-for-clash/*": ["./upstream/gui-for-clash/frontend/src/*"],
+      "@upstream/gui-for-singbox/*": ["./upstream/gui-for-singbox/frontend/src/*"]
+    }
+  }
+}

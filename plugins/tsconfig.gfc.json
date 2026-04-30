@@ -1,0 +1,5 @@
+{
+  "extends": "../tsconfig.base.json",
+  "include": ["GFC/**/*", "plugins.gfc.d.ts", "../upstream/gui-for-clash/frontend/src/**/*.ts", "../plugins.d.ts"],
+  "exclude": ["node_modules"]
+}

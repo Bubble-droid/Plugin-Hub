@@ -1,0 +1,4 @@
+packages:
+  - '.'
+  - 'upstream/gui-for-singbox/frontend'
+  - 'upstream/gui-for-clash/frontend'

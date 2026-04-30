@@ -3,6 +3,7 @@ type Recordable<T = any> = { [x: string]: T }
 type MaybePromise<T> = T | Promise<T>
 
 type Vue = typeof import('vue')
+type VNode = import('vue').VNode
 
 type UseModalOptions = Partial<{
   open: boolean
@@ -249,49 +250,16 @@ interface Plugins {
     ) => () => void
     removeCustomActions: (target: 'core_state' | 'title_bar' | 'profiles_header' | 'subscriptions_header', id: string | string[]) => void
   }
-  useKernelApiStore(): {
-    startCore: (profile?: Recordable) => Promise<void>
-    stopCore: () => Promise<void>
-    restartCore: (cleanupTask?: () => Promise<any>, keepRuntimeProfile = true) => Promise<void>
-    pid: number
-    running: boolean
-    needRestart: boolean
-    config: Recordable
-    proxies: Recordable[]
-    onLogs: (handler: (data: { type: string; payload: string }) => void) => () => void
-    onMemory: (handler: (data: { inuse: number; oslimit: number }) => void) => () => void
-    onTraffic: (handler: (data: { down: number; up: number }) => void) => () => void
-    onConnections: (handler: (data: Recordable) => void) => () => void
-    updateConfig(field: string, value: any): Promise<void>
-  }
+
   usePluginsStore(): {
-    plugins: Recordable[]
-    pluginHub: Recordable[]
+    plugins: PluginMetadata[]
+    pluginHub: PluginMetadata[]
     manualTrigger: (id: string, event: string, ...args: any[]) => Promise<void>
-    addPlugin(plugin: Recordable): Promise<void>
-    getPluginById(id: string): Recordable
-    editPlugin(id: string, plugin: Recordable): Promise<void>
+    addPlugin(plugin: PluginMetadata): Promise<void>
+    getPluginById(id: string): PluginMetadata | undefined
+    editPlugin(id: string, plugin: PluginMetadata): Promise<void>
     deletePlugin(id: string): Promise<void>
     updatePlugin(id: string): Promise<void>
-  }
-  useRulesetsStore(): {
-    rulesets: Recordable[]
-    updateRuleset(id: string): Promise<void>
-    updateRulesets(): Promise<void>
-    addRuleset(ruleset: Recordable): Promise<void>
-    getRulesetById(id: string): Recordable
-    editRuleset(id: string, ruleset: Recordable): Promise<void>
-    deleteRuleset(id: string): Promise<void>
-  }
-  useSubscribesStore(): {
-    subscribes: Recordable[]
-    updateSubscribe(id: string): Promise<void>
-    updateSubscribes(): Promise<void>
-    getSubscribeById(id: string): Recordable
-    addSubscribe(subscription: Recordable): Promise<void>
-    editSubscribe(id: string, subscription: Recordable): Promise<void>
-    deleteSubscribe(id: string): Promise<void>
-    getSubscribeTemplate(name: string, options: { url: string }): Recordable
   }
   useEnvStore(): {
     env: {
@@ -299,26 +267,25 @@ interface Plugins {
       appVersion: string
       basePath: string
       appPath: string
-      os: string
+      os: 'windows' | 'linux' | 'darwin'
       arch: string
     }
-    systemProxy(): Promise<void>
+    systemProxy: boolean
     setSystemProxy(): Promise<void>
     clearSystemProxy(): Promise<void>
     switchSystemProxy: (enable: boolean) => Promise<void>
   }
   useAppSettingsStore(): {
-    app: Recordable
+    app: {
+      kernel: {
+        branch: 'main' | 'alpha'
+        profile: string
+        testUrl: string
+        testTimeout: number
+        concurrencyLimit: number
+      }
+    }
     themeMode: 'light' | 'dark'
-  }
-  useProfilesStore(): {
-    profiles: Recordable[]
-    currentProfile: Recordable
-    getProfileById: (id: string) => Recordable
-    addProfile(profile: Recordable): Promise<void>
-    editProfile(id: string, profile: Recordable): Promise<void>
-    deleteProfile(id: string): Promise<void>
-    getProfileTemplate(name: string): Recordable
   }
   useScheduledTasksStore(): {
     scheduledtasks: Recordable[]
@@ -336,7 +303,7 @@ interface Plugins {
   base64Encode(text: string): string
   deepClone<T>(obj: T): T
   deepAssign<T, U>(target: T, source: U): T & U
-  asyncPool: <T>(poolLimit: number, array: T[], iteratorFn: (item: T, array: T[]) => Promise<any>) => Promise<any[]>
+  asyncPool: <T>(poolLimit: number, array: T[], iteratorFn: (item: T, array: T[]) => Promise<any>) => Promise<{ ok: boolean; value: any }[]>
   sampleID(): string
   isValidIPv4(ip: string): boolean
   generateConfig(profile: any, stable?: boolean): Promise<Record<string, any>>
@@ -352,6 +319,53 @@ interface Plugins {
   sleep(ms: number): Promise<void>
   ignoredError<T extends (...args: any[]) => any>(fn: T, ...args: Parameters<T>): Promise<ReturnType<T> | undefined>
   exitApp(): Promise<void>
+}
+
+interface KernelApiStore<P = Recordable, C = Recordable, TProxy = Recordable, TConnData = Recordable> {
+  startCore: (profile?: P) => Promise<void>
+  stopCore: () => Promise<void>
+  restartCore: (cleanupTask?: () => Promise<any>, keepRuntimeProfile = true) => Promise<void>
+  pid: number
+  running: boolean
+  needRestart: boolean
+  config: C
+  proxies: TProxy[]
+  onLogs: (handler: (data: { type: string; payload: string }) => void) => () => void
+  onMemory: (handler: (data: { inuse: number; oslimit: number }) => void) => () => void
+  onTraffic: (handler: (data: { down: number; up: number }) => void) => () => void
+  onConnections: (handler: (data: TConnData) => void) => () => void
+  updateConfig<K extends keyof C>(field: K, value: C[K]): Promise<void>
+}
+
+interface RulesetsStore<RS = Recordable> {
+  rulesets: RS[]
+  updateRuleset(id: string): Promise<void>
+  updateRulesets(): Promise<void>
+  addRuleset(ruleset: RS): Promise<void>
+  getRulesetById(id: string): RS | undefined
+  editRuleset(id: string, ruleset: RS): Promise<void>
+  deleteRuleset(id: string): Promise<void>
+}
+
+interface SubscribesStore<S = Recordable> {
+  subscribes: S[]
+  updateSubscribe(id: string): Promise<void>
+  updateSubscribes(): Promise<void>
+  getSubscribeById(id: string): S | undefined
+  addSubscribe(subscription: S): Promise<void>
+  editSubscribe(id: string, subscription: S): Promise<void>
+  deleteSubscribe(id: string): Promise<void>
+  getSubscribeTemplate(name: string, options: { url: string }): S
+}
+
+interface ProfilesStore<P = Recordable> {
+  profiles: P[]
+  currentProfile: P | undefined
+  getProfileById: (id: string) => P
+  addProfile(profile: P): Promise<void>
+  editProfile(id: string, profile: P): Promise<void>
+  deleteProfile(id: string): Promise<void>
+  getProfileTemplate(name: string): P
 }
 
 declare namespace globalThis {
@@ -394,7 +408,13 @@ type PluginMetadata = {
 
 type PluginStatus = number | void
 
-type PluginExposed = {
+type OnSubscribeHook<P = Recordable, S = Recordable> = (proxies: P[], subscription: S) => MaybePromise<P[]>
+
+type OnGenerateHook<C = Recordable, P = Recordable> = (config: C, profile: P) => MaybePromise<C>
+
+type OnBeforeCoreStartHook<C = Recordable, P = Recordable> = (config: C, profile: P) => MaybePromise<C>
+
+interface PluginExposed {
   onRun?: () => MaybePromise<PluginStatus>
   onEnabled?: () => MaybePromise<PluginStatus>
   onDisabled?: () => MaybePromise<PluginStatus>
@@ -402,13 +422,10 @@ type PluginExposed = {
   onInstall?: () => MaybePromise<PluginStatus>
   onUninstall?: () => MaybePromise<PluginStatus>
   onTrayUpdate?: (tray, menus) => MaybePromise<{ tray; menus }>
-  onSubscribe?: (proxies, subscription) => MaybePromise<proxies>
-  onGenerate?: (config, profile) => MaybePromise<config>
   onStartup?: () => MaybePromise<PluginStatus>
   onShutdown?: () => MaybePromise<PluginStatus>
   onCoreStarted?: () => MaybePromise<PluginStatus>
   onCoreStopped?: () => MaybePromise<PluginStatus>
-  onBeforeCoreStart?: (config, profile) => MaybePromise<Recordable>
   onBeforeCoreStop?: () => MaybePromise<PluginStatus>
   onReady?: () => MaybePromise<PluginStatus>
   onReload?: () => MaybePromise<PluginStatus>

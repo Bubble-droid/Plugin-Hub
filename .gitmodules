@@ -1,0 +1,6 @@
+[submodule "upstream/gui-for-clash"]
+	path = upstream/gui-for-clash
+	url = https://github.com/GUI-for-Cores/GUI.for.Clash.git
+[submodule "upstream/gui-for-singbox"]
+	path = upstream/gui-for-singbox
+	url = https://github.com/GUI-for-Cores/GUI.for.SingBox.git
