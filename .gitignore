@@ -1,1 +1,13 @@
 node_modules
+dist
+
+branches
+
+*.tsbuildinfo
+
+.eslintcache
+
+app-data
+
+.agents
+references

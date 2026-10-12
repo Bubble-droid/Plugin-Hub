@@ -1,0 +1,8 @@
+[submodule "vendor/gui-for-singbox"]
+	path = vendor/gui-for-singbox
+	url = https://github.com/Bubble-droid/GUI.for.SingBox.git
+	branch = plugins-api-export
+[submodule "vendor/gui-for-clash"]
+	path = vendor/gui-for-clash
+	url = https://github.com/Bubble-droid/GUI.for.Clash.git
+	branch = plugins-api-export
