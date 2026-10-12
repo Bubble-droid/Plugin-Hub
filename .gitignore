@@ -1,1 +1,9 @@
 node_modules
+dist
+
+.eslintcache
+
+/.agents/
+/.client-data/
+/.references/
+/.worktrees/

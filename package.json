@@ -3,9 +3,21 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "format": "prettier --write plugins/",
+    "build": "detype src/plugins/ dist",
+    "produce": "detype src/plugins/ plugins",
+    "lint:oxlint": "oxlint --fix src/",
+    "lint:eslint": "eslint --fix --cache src/",
+    "lint": "pnpm run lint:oxlint && pnpm run lint:eslint",
+    "format:oxfmt": "oxfmt --no-error-on-unmatched-pattern src/",
+    "format:prettier": "prettier --ignore-unknown --write plugins/",
+    "format": "pnpm run format:oxfmt && pnpm run format:prettier",
     "hashes": "node scripts/update-hashes.mjs",
-    "hashes:check": "node scripts/update-hashes.mjs --check"
+    "hashes:check": "node scripts/update-hashes.mjs --check",
+    "prepare": "husky && pnpm run sub:init",
+    "sync:deps": "node scripts/sync-submodule-deps.mjs",
+    "clean": "rm -fr node_modules vendor/*/frontend/node_modules pnpm-lock.yaml",
+    "sub:init": "git submodule update --init --recursive",
+    "sub:update": "git submodule update --remote --rebase && pnpm run sync:deps && pnpm run clean && pnpm install"
   },
   "type": "module",
   "keywords": [
@@ -16,8 +28,22 @@
   ],
   "author": "GUI.for.Cores",
   "license": "GPL-3.0",
-  "dependencies": {
-    "prettier": "^3.9.6",
-    "vue": "^3.5.41"
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@grammyjs/types": "^5.0.0",
+    "@types/node": "26.6.5",
+    "@zhexin/typebox": "^1.14.31",
+    "detype": "^2.0.8",
+    "eslint": "10.13.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-oxlint": "1.89.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "oxfmt": "0.74.0",
+    "oxlint": "1.89.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vue": "3.5.44"
   }
 }
