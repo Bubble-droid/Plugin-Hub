@@ -1,0 +1,13 @@
+{
+  "src/**/*.ts": [
+    "oxlint --fix",
+    "eslint --fix --cache",
+    "oxfmt --no-error-on-unmatched-pattern"
+  ],
+  "plugins/**/*{js,json}": [
+    "prettier --ignore-unknown --write",
+    "node scripts/update-hashes.mjs --check",
+    "node scripts/check-base-paths.mjs",
+    "node scripts/check-unregistered-plugins.mjs"
+  ]
+}

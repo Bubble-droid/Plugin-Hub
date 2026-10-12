@@ -1,0 +1,31 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "@vendor/gfs/*": ["../vendor/gui-for-singbox/frontend/*"],
+      "@vendor/gfc/*": ["../vendor/gui-for-clash/frontend/*"],
+
+      "@wails/*": [
+        "../vendor/gui-for-singbox/frontend/src/bridge/wailsjs/*",
+        "../vendor/gui-for-clash/frontend/src/bridge/wailsjs/*"
+      ],
+
+      "@/*": [
+        "../src/*",
+        "../vendor/gui-for-singbox/frontend/src/*",
+        "../vendor/gui-for-clash/frontend/src/*"
+      ]
+    },
+
+    "tsBuildInfoFile": "../node_modules/.tmp/tsconfig.generic.tsbuildinfo"
+  },
+  "include": [
+    "plugins/Generic/**/*",
+    "plugins/Extra/**/*",
+    "types/**/*",
+    "plugins.generic.ts",
+    "../vendor/gui-for-singbox/frontend/**/*",
+    "../vendor/gui-for-clash/frontend/**/*",
+    "plugins.ts"
+  ]
+}

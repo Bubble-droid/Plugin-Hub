@@ -1,0 +1,89 @@
+diff --git a/frontend/src/assets/globalMethods.ts b/frontend/src/assets/globalMethods.ts
+index d095dc8a..a00883ae 100644
+--- a/frontend/src/assets/globalMethods.ts
++++ b/frontend/src/assets/globalMethods.ts
+@@ -9,7 +9,7 @@ import * as Utils from '@/utils'
+ /**
+  * Expose methods to be used by the plugin system
+  */
+-window.Plugins = {
++const PluginApis = {
+   ...Bridge,
+   ...Utils,
+   ...Stores,
+@@ -18,8 +18,74 @@ window.Plugins = {
+     stringify,
+   },
+   DOMPurify,
+-}
++} as const
++
++window.Plugins = PluginApis
+ 
+ window.Vue = Vue
+ 
+ window.AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
++
++export type PluginApisGFS = typeof PluginApis
++
++/**
++ * The ambient `App` namespace cannot be exported through a module
++ * alias (TS2709), so its members are enumerated here. Keep this list
++ * in sync with `frontend/src/types/app.d.ts`.
++ */
++declare namespace AppGFS {
++  export type OS = App.OS
++  export type Theme = App.Theme
++  export type Color = App.Color
++  export type View = App.View
++  export type WindowStartState = App.WindowStartState
++  export type WebviewGpuPolicy = App.WebviewGpuPolicy
++  export type RequestProxyMode = App.RequestProxyMode
++  export type RequestMethod = App.RequestMethod
++  export type AppEnv = App.AppEnv
++  export type TrayContent = App.TrayContent
++  export type Menu = App.Menu
++  export type MenuItem = App.MenuItem
++  export type AppSettings = App.AppSettings
++  export type Plugin = App.Plugin
++  export type Subscription = App.Subscription
++  export type RuleSet = App.RuleSet
++  export type RulesetHub = App.RulesetHub
++  export type ScheduledTask = App.ScheduledTask
++  export type CustomActionApi = App.CustomActionApi
++  export type CustomActionProps = App.CustomActionProps
++  export type CustomActionSlot = App.CustomActionSlot
++  export type CustomActionSlots = App.CustomActionSlots
++  export type CustomAction = App.CustomAction
++  export type CustomActionFn = App.CustomActionFn
++  export type LogLevel = App.LogLevel
++  export type ClashMode = App.ClashMode
++  export type InboundType = App.InboundType
++  export type InboundListen = App.InboundListen
++  export type OutboundType = App.OutboundType
++  export type TunStack = App.TunStack
++  export type TunDnsMode = App.TunDnsMode
++  export type Network = App.Network
++  export type RuleSetType = App.RuleSetType
++  export type RuleSetFormat = App.RuleSetFormat
++  export type RuleType = App.RuleType
++  export type Strategy = App.Strategy
++  export type DnsServer = App.DnsServer
++  export type RuleAction = App.RuleAction
++  export type DnsRuleAction = App.DnsRuleAction
++  export type RuleActionReject = App.RuleActionReject
++  export type Sniffer = App.Sniffer
++  export type Log = App.Log
++  export type Experimental = App.Experimental
++  export type Proxy = App.Proxy
++  export type ProfileRuleSet = App.ProfileRuleSet
++  export type Inbound = App.Inbound
++  export type Outbound = App.Outbound
++  export type Rule = App.Rule
++  export type Route = App.Route
++  export type DnsServerConfig = App.DnsServerConfig
++  export type DnsRule = App.DnsRule
++  export type Dns = App.Dns
++  export type Profile = App.Profile
++}
++export type { AppGFS }
