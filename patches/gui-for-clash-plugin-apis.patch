@@ -1,0 +1,65 @@
+diff --git a/frontend/src/assets/globalMethods.ts b/frontend/src/assets/globalMethods.ts
+index d095dc8..928bdaa 100644
+--- a/frontend/src/assets/globalMethods.ts
++++ b/frontend/src/assets/globalMethods.ts
+@@ -9,7 +9,7 @@ import * as Utils from '@/utils'
+ /**
+  * Expose methods to be used by the plugin system
+  */
+-window.Plugins = {
++const PluginApis = {
+   ...Bridge,
+   ...Utils,
+   ...Stores,
+@@ -18,8 +18,50 @@ window.Plugins = {
+     stringify,
+   },
+   DOMPurify,
+-}
++} as const
++
++window.Plugins = PluginApis
+ 
+ window.Vue = Vue
+ 
+ window.AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
++
++export type PluginApisGFC = typeof PluginApis
++
++/**
++ * The ambient `App` namespace cannot be exported through a module
++ * alias (TS2709), so its members are enumerated here. Keep this list
++ * in sync with `frontend/src/types/app.d.ts`.
++ */
++declare namespace AppGFC {
++  export type OS = App.OS
++  export type Theme = App.Theme
++  export type Color = App.Color
++  export type View = App.View
++  export type WindowStartState = App.WindowStartState
++  export type WebviewGpuPolicy = App.WebviewGpuPolicy
++  export type RequestProxyMode = App.RequestProxyMode
++  export type RequestMethod = App.RequestMethod
++  export type AppEnv = App.AppEnv
++  export type TrayContent = App.TrayContent
++  export type Menu = App.Menu
++  export type MenuItem = App.MenuItem
++  export type AppSettings = App.AppSettings
++  export type Plugin = App.Plugin
++  export type Subscription = App.Subscription
++  export type RuleSet = App.RuleSet
++  export type RulesetHub = App.RulesetHub
++  export type ScheduledTask = App.ScheduledTask
++  export type CustomActionApi = App.CustomActionApi
++  export type CustomActionProps = App.CustomActionProps
++  export type CustomActionSlot = App.CustomActionSlot
++  export type CustomActionSlots = App.CustomActionSlots
++  export type CustomAction = App.CustomAction
++  export type CustomActionFn = App.CustomActionFn
++  export type ProxyGroup = App.ProxyGroup
++  export type RulesetBehavior = App.RulesetBehavior
++  export type RulesetFormat = App.RulesetFormat
++  export type RuleType = App.RuleType
++  export type Profile = App.Profile
++}
++export type { AppGFC }

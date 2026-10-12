@@ -1,0 +1,4 @@
+packages:
+  - '.'
+  - 'vendor/gui-for-singbox/frontend'
+  - 'vendor/gui-for-clash/frontend'
