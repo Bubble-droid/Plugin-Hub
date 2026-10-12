@@ -3,7 +3,19 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "format": "prettier --write plugins/"
+    "build": "detype src/plugins/ dist",
+    "produce": "detype src/plugins/ plugins",
+    "lint": "run-s -x \"lint:*\"",
+    "lint:oxlint": "oxlint --fix --fix-suggestions src/",
+    "lint:eslint": "eslint --fix --cache src/",
+    "format": "run-p -x \"format:*\"",
+    "format:oxfmt": "oxfmt --no-error-on-unmatched-pattern src/",
+    "format:prettier": "prettier --ignore-unknown --write plugins/",
+    "prepare": "husky && pnpm run sub:init",
+    "sync:deps": "node scripts/sync-submodule-deps.mjs",
+    "sub:init": "git submodule update --init --recursive",
+    "sub:update": "git submodule update --remote --merge && pnpm run sync:deps && pnpm run clean && pnpm install",
+    "clean": "rm -fr node_modules vendor/gui-for-singbox/frontend/node_modules vendor/gui-for-clash/frontend/node_modules pnpm-lock.yaml"
   },
   "type": "module",
   "keywords": [
@@ -14,8 +26,23 @@
   ],
   "author": "GUI.for.Cores",
   "license": "GPL-3.0",
-  "dependencies": {
-    "prettier": "^3.9.6",
-    "vue": "^3.5.41"
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@grammyjs/types": "^5.0.0",
+    "@types/node": "26.6.5",
+    "@zhexin/typebox": "^1.14.31",
+    "detype": "^2.0.8",
+    "eslint": "10.13.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-oxlint": "1.89.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "npm-run-all2": "9.0.3",
+    "oxfmt": "0.74.0",
+    "oxlint": "1.89.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vue": "3.5.44"
   }
 }

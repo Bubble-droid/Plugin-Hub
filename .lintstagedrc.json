@@ -1,0 +1,8 @@
+{
+  "src/**/*.ts": [
+    "oxlint --fix --fix-suggestions",
+    "eslint --fix --cache",
+    "oxfmt --no-error-on-unmatched-pattern"
+  ],
+  "plugins/**/*{js,json}": "prettier --ignore-unknown --write"
+}

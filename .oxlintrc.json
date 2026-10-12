@@ -1,0 +1,87 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "eslint",
+    "typescript",
+    "unicorn",
+    "oxc",
+    "import",
+    "promise",
+    "vue"
+  ],
+  "env": {
+    "browser": true
+  },
+  "ignorePatterns": [
+    ".agents",
+    "archives",
+    "dist",
+    "plugins/**/*.js",
+    "vendor",
+    "plugins.d.ts",
+    "scripts"
+  ],
+  "categories": {
+    "correctness": "error",
+    "style": "warn"
+  },
+  "rules": {
+    "one-var": "off",
+    "no-ternary": "off",
+    "no-magic-numbers": "off",
+    "sort-imports": "off",
+    "sort-keys": "off",
+    "id-length": "off",
+    "new-cap": "off",
+    "max-params": "off",
+    "max-statements": "off",
+    "no-await-in-loop": "off",
+    "no-continue": "off",
+    "capitalized-comments": "off",
+    "prefer-named-capture-group": "off",
+
+    "typescript/no-unsafe-type-assertion": "off",
+
+    "unicorn/catch-error-name": "off",
+    "unicorn/no-null": "off",
+    "unicorn/prefer-ternary": "off",
+    "unicorn/numeric-separators-style": "off",
+    "unicorn/consistent-function-scoping": "off",
+
+    "oxc/no-map-spread": "off",
+
+    "import/group-exports": "off",
+    "import/exports-last": "off",
+    "import/no-namespace": "off",
+    "import/no-named-export": "off",
+    "import/no-anonymous-default-export": "off",
+
+    "promise/avoid-new": "off",
+    "promise/prefer-await-to-then": "off",
+
+    "no-unused-expressions": [
+      "error",
+      {
+        "allowShortCircuit": true,
+        "allowTernary": true
+      }
+    ],
+    "no-duplicate-imports": [
+      "error",
+      {
+        "allowSeparateTypeImports": true
+      }
+    ],
+    "unicorn/filename-case": [
+      "error",
+      {
+        "cases": {
+          "kebabCase": true,
+          "lowercase": true
+        }
+      }
+    ],
+    "oxc/no-barrel-file": "error",
+    "import/no-cycle": "error"
+  }
+}

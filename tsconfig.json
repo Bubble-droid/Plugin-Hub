@@ -1,0 +1,17 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./src/tsconfig.generic.json"
+    },
+    {
+      "path": "./src/tsconfig.gfs.json"
+    },
+    {
+      "path": "./src/tsconfig.gfc.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ]
+}
