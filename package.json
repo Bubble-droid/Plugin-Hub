@@ -3,7 +3,17 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "format": "prettier --write plugins/"
+    "build": "detype src/plugins/ dist",
+    "produce": "detype src/plugins/ plugins",
+    "lint": "run-s -x \"lint:*\"",
+    "lint:oxlint": "oxlint --fix --fix-suggestions src/",
+    "lint:eslint": "eslint --fix --cache src/",
+    "format": "run-p -x \"format:*\"",
+    "format:oxfmt": "oxfmt --no-error-on-unmatched-pattern src/",
+    "format:prettier": "prettier --ignore-unknown --write plugins/",
+    "prepare": "husky && pnpm run sub:init",
+    "sub:init": "git submodule update --init --recursive",
+    "sub:update": "git submodule update --remote --recursive"
   },
   "type": "module",
   "keywords": [
@@ -14,8 +24,25 @@
   ],
   "author": "GUI.for.Cores",
   "license": "GPL-3.0",
-  "dependencies": {
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@grammyjs/types": "^5.0.0",
+    "@types/node": "26.4.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "@zhexin/typebox": "^1.14.31",
+    "detype": "^2.0.8",
+    "eslint": "^10.12.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-oxlint": "^1.87.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "npm-run-all2": "^9.0.3",
+    "oxfmt": "^0.65.0",
+    "oxlint": "^1.87.0",
+    "oxlint-tsgolint": "^7.0.2003",
     "prettier": "^3.9.6",
+    "typescript": "npm:@typescript/typescript6@~6.0.2",
+    "typescript-eslint": "^8.71.1",
     "vue": "^3.5.41"
   }
 }
