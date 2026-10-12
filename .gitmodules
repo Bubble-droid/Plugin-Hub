@@ -1,0 +1,10 @@
+[submodule "vendor/gui-for-singbox"]
+	path = vendor/gui-for-singbox
+	url = https://github.com/GUI-for-Cores/GUI.for.SingBox.git
+	branch = main
+	ignore = dirty
+[submodule "vendor/gui-for-clash"]
+	path = vendor/gui-for-clash
+	url = https://github.com/GUI-for-Cores/GUI.for.Clash.git
+	branch = main
+	ignore = dirty
