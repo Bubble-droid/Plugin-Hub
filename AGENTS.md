@@ -50,12 +50,31 @@ Writing, refactoring, or reviewing a plugin - its entry and lifecycle, catalog m
 configuration, triggers and handlers, and its UI (native components, utility styling, modals,
 hot-reload) - is covered by the bundled **`plugin-best-practices`** skill (installed under
 `.agents/skills/`). Load that skill before touching plugin code: it is the single source of truth for
-plugin conventions, and this section only records the repository-level constraint.
+plugin conventions. Where the skill and this repository differ, the repository-level constraints here
+and the vendored clients win.
 
-Plugin code runs in the host's **WebView, not Node.js**: `require`, `process`, `fs`, `path`, and other
-Node built-ins are unavailable, and all file, network, and process I/O goes through the `Plugins.*` APIs.
-Confirm exact signatures against the vendored clients (`vendor/gui-for-clash/frontend/src/assets/globalMethods.ts`
-and the modules it imports) rather than the `plugins.d.ts` / `src/plugins*.ts` quick references.
+That skill describes the single-file JavaScript form the clients load. In this repository, author new
+and migrated plugins in TypeScript under `src/plugins/**` and let `pnpm produce` emit the tracked
+`plugins/**` artifacts (see **Project Structure** and **Build, Test, and Development Commands**); do not
+hand-write the generated `plugins/**` files.
+
+Plugin code runs in the host's **WebView, not Node.js**: `require`, `process`, `fs`, `path`,
+`child_process`, `Buffer`, `__dirname`, and other Node built-ins are unavailable, and all file, network,
+and process I/O goes through the `Plugins.*` APIs. The vendored frontends are the source of truth for the
+runtime, not the `plugins.d.ts` / `src/plugins*.ts` quick references:
+
+- `vendor/gui-for-clash/frontend/` and `vendor/gui-for-singbox/frontend/` - the two clients' runtime,
+  stores, components, and styles (one plugin spec applies to both).
+- API surface: `frontend/src/assets/globalMethods.ts` and the modules it imports (`@/bridge`, `@/utils`,
+  `@/stores`, ...).
+- Components: `frontend/src/components/components.d.ts`, with sources under `frontend/src/components/`;
+  icon names in `frontend/src/components/Icon/icons.ts`.
+- Styling: utility classes from `frontend/src/assets/styles/utilities/*.less`; shared layout classes
+  (`form-item`, `form-action`, `rotation`) from `frontend/src/assets/styles/custom.less`.
+
+The skill's helper scripts (`scripts/fetch-host-refs.mjs`, `scripts/link-host-data.mjs`) are for
+workspaces that do not carry the host sources; this repository already vendors them, so read `vendor/`
+instead of fetching.
 
 ## Build, Test, and Development Commands
 
@@ -87,7 +106,7 @@ Formatting and linting are split by directory:
 
 oxlint enforces kebab-case/lowercase filenames, forbids import cycles and barrel files, and treats correctness/performance issues as errors.
 
-Declare functions and method properties with arrow functions (`const foo = () => {}`, `foo: () => {}`); only special class methods are exempt (for example `constructor`, `get`/`set`, generators, or methods that need `super`).
+Declare functions and method properties with arrow functions (`const foo = () => {}`, `foo: () => {}`); only special class methods are exempt (for example `constructor`, `get`/`set`, generators, or methods that need `super`). The official changelog example uses method shorthand for handlers - functionally equivalent, but not the local convention.
 
 Because `src/` is checked by strict, type-aware rules, a few habits prevent most lint failures: initialize `let` bindings on declaration; build strings with template literals instead of `+`; avoid nested ternaries (use `if`/`else`); narrow values to primitives before `String(value)` (never stringify a non-primitive `unknown`); and start comments with a capital letter. Run `pnpm exec oxlint src/` and `pnpm exec eslint src/` until both are clean.
 
