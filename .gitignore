@@ -1,13 +1,13 @@
 node_modules
 dist
 
-branches
-
 *.tsbuildinfo
 
 .eslintcache
 
-app-data
+branches
+references
 
 .agents
-references
+
+app-data
